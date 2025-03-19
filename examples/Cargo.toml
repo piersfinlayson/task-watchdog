@@ -1,0 +1,67 @@
+[package]
+name = "task-watchdog-examples"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+# See (build-all.sh) for all valid combinations
+default = ["rp2040","defmt","embassy","defmt-embassy","defmt-embassy-rp"]
+alloc = ["task-watchdog/alloc"]
+
+embassy = ["task-watchdog/embassy"]
+
+defmt = ["dep:defmt", "dep:defmt-rtt", "panic-probe/print-defmt", "task-watchdog/defmt"]
+defmt-embassy = ["task-watchdog/defmt", "task-watchdog/defmt-embassy", "embassy-time/defmt", "embassy-time/defmt-timestamp-uptime", "embassy-executor/defmt"]
+
+rp2040 = ["task-watchdog/rp2040", "dep:embassy-rp", "embassy-rp/rp2040", "cortex-m", "dep:cortex-m-rt", "embassy-time/tick-hz-1_000_000", "rp2040-memory-x"]
+rp2350 = ["task-watchdog/rp2350", "dep:embassy-rp", "embassy-rp/rp235xa", "cortex-m", "dep:cortex-m-rt", "embassy-time/tick-hz-1_000_000", "rp2350-memory-x"]
+defmt-embassy-rp = ["embassy-rp/defmt", "task-watchdog/defmt-embassy-rp"]
+
+stm32 = ["dep:embassy-stm32", "dep:cortex-m", "dep:cortex-m-rt", "task-watchdog/stm32", "embassy-time/tick-hz-32_768", "embedded-hal", "cortex-m/critical-section-single-core"]
+defmt-embassy-stm32 = ["embassy-stm32/defmt", "task-watchdog/defmt-embassy-stm32"]
+
+rp2040-hal = ["dep:rp2040-hal", "dep:rp2040-boot2", "embedded-hal", "task-watchdog/rp2040-hal", "rp2040-hal-memory-x", "cortex-m/critical-section-single-core"]
+rp2350-hal = ["dep:rp235x-hal", "embedded-hal", "task-watchdog/rp2350-hal", "cortex-m/critical-section-single-core", "rp2350-memory-x"]
+embedded-hal = ["dep:embedded-hal"]
+cortex-m = ["dep:cortex-m", "dep:cortex-m-rt"]
+
+rp2040-memory-x = []
+rp2040-hal-memory-x = []
+rp2350-memory-x = []
+
+[[bin]]
+# Pico/Pico 2( RP2040/RP2350) example, including options for no defmt and 
+# dynamic memory allocation
+name = "embassy"
+path = "src/embassy.rs"
+# Also requires rp2040, rp2350 or stm32
+# Include either embassy-rp or embassy-stm32
+# If you want defmt use defmt and defmt-embassy-rp/defmt-embassy-stm32
+# If you want dynamic memory allocation use alloc
+required-features = [ "embassy" ]
+
+[[bin]]
+name = "rp-sync"
+path = "src/rp-sync.rs"
+# Also use feature rp2040-hal or rp235x-hal as appropriate
+required-features = [ "cortex-m" ]
+
+[dependencies]
+task-watchdog = { path = ".." }
+defmt = { version = "0.3", optional = true }
+embassy-sync = { version = "0.6.2"  }
+embassy-time = { version = "0.4" }
+embassy-executor = { version = "0.7.0", features = [ "arch-cortex-m", "executor-thread"] }
+embassy-rp = { version = "0.4", features = [ "time-driver", "critical-section-impl" ], optional = true  }
+embassy-stm32 = { version = "0.2.0", features = [ "memory-x", "time-driver-any", "unstable-pac" ], optional = true }
+portable-atomic = { version = "1.10", features = ["critical-section"] }
+cortex-m = { version = "0.7.6", features = ["inline-asm"], optional = true }
+cortex-m-rt = { version = "0.7.0", optional = true }
+panic-probe = { version = "0.3" }
+static_cell = "2.1"
+defmt-rtt = { version = "0.4", optional = true }
+embedded-alloc = "0.6"
+embedded-hal = { version = "1.0.0", optional = true }
+rp2040-hal = { version = "0.11", optional = true }
+rp2040-boot2 = { version = "0.3", optional = true }
+rp235x-hal = { version = "0.3", optional = true }

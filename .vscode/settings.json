@@ -1,0 +1,26 @@
+{
+    // Targets
+    //"rust-analyzer.cargo.target": "x86_64-unknown-linux-gnu",
+    "rust-analyzer.cargo.target": "thumbv6m-none-eabi",
+    //"rust-analyzer.cargo.target": "thumbv7m-none-eabi",
+    //"rust-analyzer.cargo.target": "thumbv8m.main-none-eabi",
+    "rust-analyzer.checkOnSave.allTargets": false,
+    
+    // Features
+    //"rust-analyzer.cargo.features": [ "default" ],
+    //"rust-analyzer.cargo.features": [ "alloc" ],
+    //"rust-analyzer.cargo.features": [ "embassy", "rp2040", ],
+    //"rust-analyzer.cargo.features": [ "embassy", "rp2350", ],
+    //"rust-analyzer.cargo.features": [ "defmt", "embassy", "rp2040", ],
+    //"rust-analyzer.cargo.features": [ "defmt", "embassy", "rp2350", ],
+    //"rust-analyzer.cargo.features": [ "defmt", "embassy", "rp2040", "alloc" ],
+    //"rust-analyzer.cargo.features": [ "defmt", "embassy", "rp2350", "alloc" ],
+    //"rust-analyzer.cargo.features": [ "defmt", "embassy", "stm32", ],
+    "rust-analyzer.cargo.features": [ "rp2040-hal", "cortex-m", "dep:embedded-hal" ],
+    "rust-analyzer.cargo.noDefaultFeatures": true,
+
+    // Clippy settings
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.extraArgs": ["--all-features"],
+    "rust-analyzer.checkOnSave.extraArgs": ["--", "-W", "clippy::all", "-W", "clippy::pedantic"]
+}
