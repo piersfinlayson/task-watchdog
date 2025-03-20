@@ -16,4 +16,4 @@ EXAMPLE=embassy
 # for your board for a sample memory.x and build.rs implementation.
 BOARD=stm32f103c8
 
-cargo run --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $STM32_TARGET --no-default-features --features embassy,defmt,defmt-embassy,stm32,defmt-embassy-stm32,embassy-stm32/$BOARD
+cargo run --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $STM32_TARGET --no-default-features --features stm32-embassy,defmt-embassy-stm32,embassy-stm32/$BOARD

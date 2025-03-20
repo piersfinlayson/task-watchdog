@@ -41,12 +41,12 @@
   
   <!-- Task 3 feed arrow -->
   <path d="M 210 315 L 320 265" fill="none" stroke="#0066cc" stroke-width="2.5" marker-end="url(#arrowhead)"/>
-  <text x="250" y="285" font-family="Arial" font-size="14" fill="#0066cc" font-style="italic">feed()</text>
+  <text x="250" y="275" font-family="Arial" font-size="14" fill="#0066cc" font-style="italic">feed()</text>
   
   <!-- Arrow from library to hardware watchdog -->
   <path d="M 540 225 L 610 225" fill="none" stroke="#274e13" stroke-width="3" marker-end="url(#arrowhead)"/>
-  <text x="575" y="205" font-family="Arial" font-size="16" fill="#274e13" font-weight="bold">Managed</text>
-  <text x="575" y="250" font-family="Arial" font-size="16" fill="#274e13" font-weight="bold">Refresh</text>
+  <text x="540" y="205" font-family="Arial" font-size="16" fill="#274e13" font-weight="bold">Managed</text>
+  <text x="545" y="250" font-family="Arial" font-size="16" fill="#274e13" font-weight="bold">Refresh</text>
   
   <!-- System reset path - completely redesigned -->
   <!-- Vertical line from hardware watchdog -->

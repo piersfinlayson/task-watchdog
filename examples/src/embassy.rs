@@ -45,11 +45,11 @@ use embedded_alloc::LlffHeap as Heap;
 use static_cell::StaticCell;
 use panic_probe as _;
 
-use task_watchdog::{EmbassyClock, Id, WatchdogConfig};
+use task_watchdog::{Id, WatchdogConfig};
 #[cfg(any(feature = "rp2040", feature = "rp2350"))]
-use task_watchdog::embassy_rp::{WatchdogRunner, watchdog_run, RpWatchdog};
+use task_watchdog::embassy_rp::{WatchdogRunner, watchdog_run};
 #[cfg(feature = "stm32")]
-use task_watchdog::embassy_stm32::{WatchdogRunner, watchdog_run, Stm32Watchdog};
+use task_watchdog::embassy_stm32::{WatchdogRunner, watchdog_run};
 
 /// If we're not using cfg(feature = "defmt") we need logging macros.
 #[cfg(not(feature = "defmt"))]
@@ -71,14 +71,10 @@ static HEAP: Heap = Heap::empty();
 /// I - whatever type you are using to identify tasks, implementing to Id
 ///     trait
 /// N - the number of tasks to monitor (only used in the no alloc case)
-#[cfg(all(feature = "alloc", any(feature = "rp2040", feature = "rp2350")))]
-type WatchdogRunnerType = WatchdogRunner<TaskId, RpWatchdog, EmbassyClock>;
-#[cfg(all(not(feature = "alloc"), any(feature = "rp2040", feature = "rp2350")))]
-type WatchdogRunnerType = WatchdogRunner<TaskId, NUM_TASK_IDS, RpWatchdog, EmbassyClock>;
-#[cfg(all(feature = "alloc", feature = "stm32"))]
-type WatchdogRunnerType = WatchdogRunner<TaskId, Stm32Watchdog, EmbassyClock>;
-#[cfg(all(not(feature = "alloc"), feature = "stm32"))]
-type WatchdogRunnerType = WatchdogRunner<TaskId, NUM_TASK_IDS, Stm32Watchdog, EmbassyClock>;
+#[cfg(feature = "alloc")]
+type WatchdogRunnerType = WatchdogRunner<TaskId>;
+#[cfg(not(feature = "alloc"))]
+type WatchdogRunnerType = WatchdogRunner<TaskId, NUM_TASK_IDS>;
 
 // Create a static to hold our Watchdog object, so it can be shared between
 // tasks.
@@ -169,17 +165,9 @@ async fn main(spawner: Spawner) {
 
     // Create and configure the watchdog runner.
     #[cfg(any(feature = "rp2040", feature = "rp2350"))]
-    let watchdog = {
-        let clock = EmbassyClock;
-        let hw_watchdog = RpWatchdog::new(p.WATCHDOG);
-        WatchdogRunner::new(hw_watchdog, config, clock)
-    };
+    let watchdog = WatchdogRunner::new(p.WATCHDOG, config);
     #[cfg(feature = "stm32")]
-    let watchdog = {
-        let clock = EmbassyClock;
-        let hw_watchdog = Stm32Watchdog::new(p.IWDG);
-        WatchdogRunner::new(hw_watchdog, config, clock)
-    };
+    let watchdog = WatchdogRunner::new(p.IWDG, config);
 
     // Make watchdog static so it can be shared between tasks
     let watchdog = WATCHDOG.init(watchdog);

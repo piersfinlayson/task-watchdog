@@ -1,4 +1,4 @@
-# 🛡️ task-watchdog
+# 🛡️ task-watchdog 🐺
 
 A robust, flexible watchdog management library for embedded systems that multiplexes multiple task watchdogs into a single hardware watchdog timer, preventing system lockups when tasks fail to respond.
 

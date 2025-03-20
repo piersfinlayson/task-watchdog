@@ -4,18 +4,53 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Piers Finlayson <piers@piers.rocks"]
 description = "A robust, flexible watchdog management library for embedded systems that multiplexes multiple task watchdogs into a single hardware watchdog timer, preventing system lockups when tasks fail to respond"
+documentation = "https://docs.rs/task-watchdog"
 repository = "https://github.com/piersfinlayson/task-watchdog"
 license = "MIT OR Apache-2.0"
-keywords = ["embedded", "watchdog", "no_std", "embedded-hal"]
-categories = ["embedded", "no-std"]
+keywords = ["embedded", "watchdog", "embassy", "no_std", "embedded-hal"]
+categories = ["embedded", "no-std", "asynchronous", "hardware-support"]
 
 [workspace]
 members = [
     "examples",
 ]
 
+[features]
+# Default features (none)
+default = []
+
+# Use for embassy (async support) for the specified microcontroller 
+rp2040-embassy = ["embassy-common", "embassy-rp/rp2040"]
+rp2350-embassy = ["embassy-common", "embassy-rp/rp235xa", ]
+stm32-embassy = ["embassy-common", "embassy-stm32"]
+
+# Use alongside rp2040/rp2350/stm32-embassy to add defmt support 
+defmt-embassy-rp = ["defmt-embassy", "embassy-rp/defmt"]
+defmt-embassy-stm32 = ["defmt-embassy", "embassy-stm32/defmt"]
+
+# Use defmt logging
+defmt = ["dep:defmt"]
+
+# Use for rp2040/rp2350 HAL sync support
+rp2040-hal = ["dep:rp2040-hal", "cortex-m", "dep:cortex-m-rt", "cortex-m/critical-section-single-core", "embedded-hal"]
+rp2350-hal = ["dep:rp235x-hal", "cortex-m", "dep:cortex-m-rt", "cortex-m/critical-section-single-core", "embedded-hal"]
+
+# Dynamically allocate memory for task monitoring.  If not enabled, a fixed
+# size task array will be used (and not enabling this is the recommended
+# approach for embedded devices).
+alloc = []
+
+# The following features are used internally - do not specify explicitly
+embassy = [
+  "dep:embassy-sync", 
+  "dep:embassy-time", 
+  "dep:embassy-executor",
+]
+defmt-embassy = ["dep:defmt", "defmt", "embassy-executor/defmt", "embassy-sync/defmt", "embassy-time/defmt"]
+cortex-m = ["dep:cortex-m"]
+embassy-common = ["embassy", "embassy-executor/arch-cortex-m", "cortex-m", "dep:cortex-m-rt"]
+
 [dependencies]
-# Optional dependencies
 defmt = { version = "0.3", optional = true }
 embassy-sync = { version = "0.6", optional = true }
 embassy-time = { version = "0.4", optional = true }
@@ -31,7 +66,6 @@ rp2040-hal = { version = "0.11", optional = true }
 rp235x-hal = { version = "0.3", optional = true }
 
 [patch.crates-io]
-#embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "a704c41a368b3a48751d58f5e5227f1fb8fc621c" }
 embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "9d672c44d1dccaac039c656bc2986c4fcf9823c9" }
 embassy-rp = { git = "https://github.com/embassy-rs/embassy", rev = "9d672c44d1dccaac039c656bc2986c4fcf9823c9" }
 embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "9d672c44d1dccaac039c656bc2986c4fcf9823c9" }
@@ -41,40 +75,16 @@ embassy-stm32 = { git = "https://github.com/embassy-rs/embassy", rev = "9d672c44
 embassy-time-driver = { git = "https://github.com/embassy-rs/embassy", rev = "9d672c44d1dccaac039c656bc2986c4fcf9823c9", version = "0.2.0" }
 embassy-time-queue-utils = { git = "https://github.com/embassy-rs/embassy", rev = "9d672c44d1dccaac039c656bc2986c4fcf9823c9", version = "0.1.0" }
 
-[features]
-# Default features (none)
-default = []
-# Use defmt logging
-defmt = ["dep:defmt"]
-# Dynamically allocate memory for task monitoring.  If not enabled, a fixed
-# size task array will be used (and not enabling this is the recommended
-# approach for embedded devices).
-alloc = []
-# Use this crate with the embassy async runtime
-embassy = [
-  "dep:embassy-sync", 
-  "dep:embassy-time", 
-  "dep:embassy-executor",
-]
-defmt-embassy = ["dep:defmt", "embassy-executor/defmt", "embassy-sync/defmt", "embassy-time/defmt"]
-defmt-embassy-rp = ["dep:defmt", "embassy-rp/defmt"]
-defmt-embassy-stm32 = ["dep:defmt", "embassy-stm32/defmt"]
-cortex-m = ["dep:cortex-m"]
-# Use with the RP2040 (Pico) microcontroller
-rp2040 = ["embassy", "embassy-rp/rp2040", "embassy-executor/arch-cortex-m", "cortex-m", "dep:cortex-m-rt"]
-# Use with the RP2350 (Pico 2) microcontroller
-rp2350 = ["embassy", "embassy-rp/rp235xa", "embassy-executor/arch-cortex-m", "cortex-m", "dep:cortex-m-rt"]
-stm32 = ["embassy", "embassy-stm32", "embassy-executor/arch-cortex-m", "cortex-m", "dep:cortex-m-rt" ]
-rp2040-hal = ["dep:rp2040-hal", "cortex-m", "dep:cortex-m-rt", "cortex-m/critical-section-single-core", "embedded-hal"]
-rp2350-hal = ["dep:rp235x-hal", "cortex-m", "dep:cortex-m-rt", "cortex-m/critical-section-single-core", "embedded-hal"]
-
 [lib]
 name = "task_watchdog"
 path = "src/lib.rs"
+test = false
 
 [package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+# Due to limitations in docs.rs, we need to specify features/targets.  This
+# means that full documentation for all features won't be provided.
+features = ["rp2040-embassy","defmt-embassy-rp", "rp2040-hal"]
+targets = [ "thumbv6m-none-eabi" ]
 
 [profile.dev]
 opt-level = "s"

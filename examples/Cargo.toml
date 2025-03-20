@@ -1,50 +1,61 @@
 [package]
 name = "task-watchdog-examples"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [features]
 # See (build-all.sh) for all valid combinations
-default = ["rp2040","defmt","embassy","defmt-embassy","defmt-embassy-rp"]
+default = ["rp2040-embassy","defmt-embassy-rp"]
 alloc = ["task-watchdog/alloc"]
 
 embassy = ["task-watchdog/embassy"]
 
+rp2040-embassy = ["rp2040", "embassy", "task-watchdog/rp2040-embassy", "dep:embassy-rp", "embassy-rp/rp2040", "cortex-m", "embassy-time/tick-hz-1_000_000", "rp2040-memory-x"]
+rp2350-embassy = ["rp2350", "embassy", "task-watchdog/rp2350-embassy", "dep:embassy-rp", "embassy-rp/rp235xa", "cortex-m", "embassy-time/tick-hz-1_000_000", "rp2350-memory-x"]
+defmt-embassy-rp = ["defmt-embassy", "embassy-rp/defmt", "task-watchdog/defmt-embassy-rp"]
+
+stm32-embassy = ["stm32", "embassy", "dep:embassy-stm32", "cortex-m", "task-watchdog/stm32-embassy", "embassy-time/tick-hz-32_768", "embedded-hal", "cortex-m/critical-section-single-core"]
+defmt-embassy-stm32 = ["defmt-embassy", "embassy-stm32/defmt", "task-watchdog/defmt-embassy-stm32"]
+
 defmt = ["dep:defmt", "dep:defmt-rtt", "panic-probe/print-defmt", "task-watchdog/defmt"]
-defmt-embassy = ["task-watchdog/defmt", "task-watchdog/defmt-embassy", "embassy-time/defmt", "embassy-time/defmt-timestamp-uptime", "embassy-executor/defmt"]
+defmt-embassy = ["defmt", "task-watchdog/defmt", "task-watchdog/defmt-embassy", "embassy-time/defmt", "embassy-time/defmt-timestamp-uptime", "embassy-executor/defmt"]
 
-rp2040 = ["task-watchdog/rp2040", "dep:embassy-rp", "embassy-rp/rp2040", "cortex-m", "dep:cortex-m-rt", "embassy-time/tick-hz-1_000_000", "rp2040-memory-x"]
-rp2350 = ["task-watchdog/rp2350", "dep:embassy-rp", "embassy-rp/rp235xa", "cortex-m", "dep:cortex-m-rt", "embassy-time/tick-hz-1_000_000", "rp2350-memory-x"]
-defmt-embassy-rp = ["embassy-rp/defmt", "task-watchdog/defmt-embassy-rp"]
-
-stm32 = ["dep:embassy-stm32", "dep:cortex-m", "dep:cortex-m-rt", "task-watchdog/stm32", "embassy-time/tick-hz-32_768", "embedded-hal", "cortex-m/critical-section-single-core"]
-defmt-embassy-stm32 = ["embassy-stm32/defmt", "task-watchdog/defmt-embassy-stm32"]
-
-rp2040-hal = ["dep:rp2040-hal", "dep:rp2040-boot2", "embedded-hal", "task-watchdog/rp2040-hal", "rp2040-hal-memory-x", "cortex-m/critical-section-single-core"]
-rp2350-hal = ["dep:rp235x-hal", "embedded-hal", "task-watchdog/rp2350-hal", "cortex-m/critical-section-single-core", "rp2350-memory-x"]
+rp2040-hal = ["dep:rp2040-hal", "dep:rp2040-boot2", "embedded-hal", "task-watchdog/rp2040-hal", "rp2040-hal-memory-x", "cortex-m", "cortex-m/critical-section-single-core"]
+rp2350-hal = ["dep:rp235x-hal", "embedded-hal", "task-watchdog/rp2350-hal", "cortex-m", "cortex-m/critical-section-single-core", "rp2350-memory-x"]
 embedded-hal = ["dep:embedded-hal"]
 cortex-m = ["dep:cortex-m", "dep:cortex-m-rt"]
+
+rp2040 = []
+rp2350 = []
+stm32 = []
 
 rp2040-memory-x = []
 rp2040-hal-memory-x = []
 rp2350-memory-x = []
 
 [[bin]]
-# Pico/Pico 2( RP2040/RP2350) example, including options for no defmt and 
-# dynamic memory allocation
+name = "intro"
+path = "src/intro.rs"
+# Requires `rp2040-embassy` or `rp2350-embassy` and `defmt-embassy-rp`
+required-features = [ "embassy" ]
+test = false
+
+[[bin]]
+# Embassy/async example, supports RP2040, RP2350 and STM32
 name = "embassy"
 path = "src/embassy.rs"
-# Also requires rp2040, rp2350 or stm32
-# Include either embassy-rp or embassy-stm32
-# If you want defmt use defmt and defmt-embassy-rp/defmt-embassy-stm32
+# Requires `rp2040-embassy`, `rp2350-embassy` or `stm32-embassy`
+# If you want defmt use defmt-embassy-rp/defmt-embassy-stm32
 # If you want dynamic memory allocation use alloc
 required-features = [ "embassy" ]
+test = false
 
 [[bin]]
 name = "rp-sync"
 path = "src/rp-sync.rs"
 # Also use feature rp2040-hal or rp235x-hal as appropriate
 required-features = [ "cortex-m" ]
+test = false
 
 [dependencies]
 task-watchdog = { path = ".." }
