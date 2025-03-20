@@ -11,4 +11,4 @@ EXAMPLE=rp-sync
 # ... for Pico
 TARGET=$RP2350_TARGET
 
-cargo run --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features rp2350-hal,cortex-m,defmt
+cargo run --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features rp2350-hal,defmt
