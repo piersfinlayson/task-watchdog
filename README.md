@@ -37,7 +37,7 @@ builds/flash-async-stm32f103c8.sh
 ```
 
 To understand how to use `task-watchdog` yourself, check out one of the examples:
-* [`async.rs`](examples/src/async.rs) - Pico/Pico 2/STM32
+* [`embasy.rs`](examples/src/embasy.rs) - Pico/Pico 2/STM32
 * [`rp-sync.rs`](examples/src/rp-sync.rs) - Pico/Pico 2
 
 ## 📝 Usage
@@ -50,9 +50,9 @@ The library supports both synchronous and asynchronous APIs with a consistent pa
 - **Feeding**: Tasks must feed, or pet, the watchdog within their timeout period to prevent a reset
 - **Task Multiplexing**: The library efficiently manages multiple task timeouts through a single hardware watchdog, triggering if any individual task fails to check in
 
-![Task Watchdog Multiplexing](./docs/images/multiplex.svg)
+![Task Watchdog Multiplexing](https://raw.githubusercontent.com/piersfinlayson/task-watchdog/refs/heads/main/docs/images/multiplex.svg)
 
-###⚡Asynchronous API (Embassy)
+### ⚡Asynchronous API (Embassy)
 
 For platforms using Embassy, tasks feed the watchdog asynchronously:
 
@@ -79,7 +79,7 @@ async fn main_task(watchdog: &'static WatchdogRunnerType) -> ! {
 // Implement other tasks
 ```
 
-See complete example at [`examples/src/async.rs`](examples/src/async.rs)
+See complete example at [`examples/src/embasy.rs`](examples/src/embasy.rs)
 
 ### ⚙️ Synchronous API (non-Embassy)
 
