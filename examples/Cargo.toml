@@ -35,7 +35,7 @@ rp2350-memory-x = []
 
 [[bin]]
 name = "intro"
-path = "src/intro.rs"
+path = "src/bin/intro.rs"
 # Requires `rp2040-embassy` or `rp2350-embassy` and `defmt-embassy-rp`
 required-features = [ "embassy" ]
 test = false
@@ -43,7 +43,7 @@ test = false
 [[bin]]
 # Embassy/async example, supports RP2040, RP2350 and STM32
 name = "embassy"
-path = "src/embassy.rs"
+path = "src/bin/embassy.rs"
 # Requires `rp2040-embassy`, `rp2350-embassy` or `stm32-embassy`
 # If you want defmt use defmt-embassy-rp/defmt-embassy-stm32
 # If you want dynamic memory allocation use alloc
@@ -52,7 +52,7 @@ test = false
 
 [[bin]]
 name = "rp-sync"
-path = "src/rp-sync.rs"
+path = "src/bin/rp-sync.rs"
 # Also use feature rp2040-hal or rp235x-hal as appropriate
 required-features = [ "cortex-m" ]
 test = false

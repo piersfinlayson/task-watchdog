@@ -37,8 +37,9 @@ builds/flash-async-stm32f103c8.sh
 ```
 
 To understand how to use `task-watchdog` yourself, check out one of the examples:
-* [`embasy.rs`](examples/src/embasy.rs) - Pico/Pico 2/STM32
-* [`rp-sync.rs`](examples/src/rp-sync.rs) - Pico/Pico 2
+* [`intro.rs`](examples/src/bin/intro.rs) - A very basic Pico/Pico 2/STM32 async example
+* [`embasy.rs`](examples/src/bin/embasy.rs) - Pico/Pico 2/STM32
+* [`rp-sync.rs`](examples/src/bin/rp-sync.rs) - Pico/Pico 2
 
 ## 📝 Usage
 
