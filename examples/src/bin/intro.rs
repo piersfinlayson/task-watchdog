@@ -99,7 +99,7 @@ async fn main_task(watchdog: &'static WatchdogRunner<TaskId, NUM_TASKS>) -> !{
 async fn second_task(watchdog: &'static WatchdogRunner<TaskId, NUM_TASKS>) -> !{
    loop {
         // Feed the watchdog
-        watchdog.feed(&TaskId::Main).await;
+        watchdog.feed(&TaskId::Second).await;
 
         // Do some work
         Timer::after(Duration::from_millis(2000)).await;
