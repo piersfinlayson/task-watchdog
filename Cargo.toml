@@ -1,6 +1,6 @@
 [package]
 name = "task-watchdog"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Piers Finlayson <piers@piers.rocks"]
 description = "A robust, flexible watchdog management library for embedded systems that multiplexes multiple task watchdogs into a single hardware watchdog timer, preventing system lockups when tasks fail to respond"
