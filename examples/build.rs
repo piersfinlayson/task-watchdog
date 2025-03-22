@@ -45,13 +45,16 @@ fn main() {
         include_bytes!("../link/memory.rp235x.x")
     };
 
-    #[cfg(any(any(feature = "rp2040-memory-x", feature = "rp2040-hal-memory-x"), feature = "rp2350-memory-x"))]
+    #[cfg(any(
+        any(feature = "rp2040-memory-x", feature = "rp2040-hal-memory-x"),
+        feature = "rp2350-memory-x"
+    ))]
     {
         use std::env;
         use std::fs::File;
         use std::io::Write;
         use std::path::PathBuf;
-        
+
         // Put `memory.x` in our output directory and ensure it's on the linker
         // search path.
         let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
@@ -62,7 +65,10 @@ fn main() {
         println!("cargo:rustc-link-search={}", out.display());
     }
 
-    #[cfg(any(all(feature = "rp2040-memory-x", not(feature = "rp2040-hal")), feature = "rp2350-memory-x"))]
+    #[cfg(any(
+        all(feature = "rp2040-memory-x", not(feature = "rp2040-hal")),
+        feature = "rp2350-memory-x"
+    ))]
     {
         // Set RP specific linker arguments for the binary.
         println!("cargo:rustc-link-arg-bins=-Tdevice.x");

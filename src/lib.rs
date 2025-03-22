@@ -7,16 +7,16 @@
 //! This crate provides a task registration pattern that monitors multiple
 //! tasks and ensures they are all still active, feeding the hardware
 //! watchdog only if all tasks are healthy.
-//! 
+//!
 //! Tasks can be dynamically registered and deregistered when the system is
 //! running, to allow tasks that are created after startup to be monitoring,
 //! and to prevent tasks that are expected to block/pause from causing the
-//! device to restart. 
-//! 
+//! device to restart.
+//!
 //! ![Multiplexed Task Diagram](https://raw.githubusercontent.com/piersfinlayson/task-watchdog/refs/heads/main/docs/images/multiplex.svg)
 //!
 //! ## Key Features
-//! 
+//!
 //! - **Hardware Agnostic API**: Implements a consistent interface across
 //!   different embedded microcontrollers with extensible trait system for
 //!   hardware watchdog and clock types
@@ -34,17 +34,17 @@
 //!   environments without an operating system
 //!
 //! ## Usage
-//! 
+//!
 //! The following is a complete, minimal, example for using the task-watchdog
 //! crate using embassy-rs on an RP2040 or RP2350 (Pico or Pico 2).
 //! It uses static allocation (no alloc), and creates two tasks with
 //! different timeouts, both of which are policed by task-watchdog, and in
 //! turn, the hardware watchdog.
-//! 
+//!
 //! ```rust
 //! #![no_std]
 //! #![no_main]
-//! 
+//!
 //! use task_watchdog::{WatchdogConfig, Id};
 //! use task_watchdog::embassy_rp::{WatchdogRunner, watchdog_run};
 //! use embassy_time::{Duration, Timer};
@@ -52,11 +52,11 @@
 //! use embassy_executor::Spawner;
 //! use static_cell::StaticCell;
 //! use panic_probe as _;
-//! 
+//!
 //! // Create a static to hold the task-watchdog object, so it has static
 //! // lifetime and can be shared with tasks.
 //! static WATCHDOG: StaticCell<WatchdogRunner<TaskId, NUM_TASKS>> = StaticCell::new();
-//! 
+//!
 //! // Create an object to contain our task IDs.  It must implement the Id
 //! // trait, which, for simply TaskId types means deriving the following
 //! // traits:
@@ -67,19 +67,19 @@
 //! }
 //! impl Id for TaskId {}  // Nothing else to implement as we derived the required traits
 //! const NUM_TASKS: usize = 2;
-//! 
+//!
 //! #[embassy_executor::main]
 //! async fn main(spawner: Spawner) {
 //!     // Initialize the hardare peripherals
 //!     let p = embassy_rp::init(Config::default());
-//! 
+//!
 //!     // Set up watchdog configuration, with a 5s hardware watchdog timeout, and
 //!     // with the task watchdog checking tasks every second.
 //!     let config = WatchdogConfig {
 //!         hardware_timeout: Duration::from_millis(5000),
 //!         check_interval: Duration::from_millis(1000),
 //!     };
-//! 
+//!
 //!     // Create the watchdog runner and store it in the static cell
 //!     let watchdog = WatchdogRunner::new(p.WATCHDOG, config);
 //!     let watchdog = WATCHDOG.init(watchdog);
@@ -87,63 +87,63 @@
 //!     // Register our tasks with the task-watchdog.  Each can have a different timeout.
 //!     watchdog.register_task(&TaskId::Main, Duration::from_millis(2000)).await;
 //!     watchdog.register_task(&TaskId::Second, Duration::from_millis(4000)).await  ;
-//! 
+//!
 //!     // Spawn tasks that will feed the watchdog
 //!     spawner.must_spawn(main_task(watchdog));
 //!     spawner.must_spawn(second_task(watchdog));
-//! 
+//!
 //!     // Finally spawn the watchdog - this will start the hardware watchdog, and feed it
 //!     // for as long as _all_ tasks are healthy.
 //!     spawner.must_spawn(watchdog_task(watchdog));
 //! }
-//! 
+//!
 //! // Provide a simple embassy task for the watchdog
 //! #[embassy_executor::task]
 //! async fn watchdog_task(watchdog: &'static WatchdogRunner<TaskId, NUM_TASKS>) -> ! {
 //!     watchdog_run(watchdog.create_task()).await
 //! }
-//! 
+//!
 //! // Implement your main task
 //! #[embassy_executor::task]
 //! async fn main_task(watchdog: &'static WatchdogRunner<TaskId, NUM_TASKS>) -> !{
 //!    loop {
 //!         // Feed the watchdog
 //!         watchdog.feed(&TaskId::Main).await;
-//! 
+//!
 //!         // Do some work
 //!         Timer::after(Duration::from_millis(1000)).await;
 //!    }
 //! }
-//! 
+//!
 //! // Implement your second task
 //! #[embassy_executor::task]
 //! async fn second_task(watchdog: &'static WatchdogRunner<TaskId, NUM_TASKS>) -> !{
 //!    loop {
 //!         // Feed the watchdog
 //!         watchdog.feed(&TaskId::Second).await;
-//! 
+//!
 //!         // Do some work
 //!         Timer::after(Duration::from_millis(2000)).await;
 //!    }
 //! }
-//! 
+//!
 //! ```
 //! See the [`README`](https://github.com/piersfinlayson/task-watchdog/blob/main/README.md) and the [examples](https://github.com/piersfinlayson/task-watchdog/tree/main/examples/src) for more usage examples.
 //!
 //! ## Targets
-//! 
+//!
 //! For embedded devices you need to install and specify your target when
 //! building.  Use:
 //! - RP2040 - `thumbv6m-none-eabi`
 //! - RP2350 - `thumbv8m.main-none-eabihf`
 //! - STM32 - `thumbv7m-none-eabi`
-//! 
+//!
 //! ## Feature Flags
-//! 
+//!
 //! The following feature flags are supported
 //!
 //! ### Embassy support:
-//! 
+//!
 //! - `rp2040-embassy`: Enable the RP2040-specific embassy implementation
 //! - `rp2350-embassy`: Enable the RP2350-specific embassy implementation
 //! - `stm32`: Enable the STM32-specific embassy implementation
@@ -151,33 +151,33 @@
 //! - `defmt-embassy-stm32`: Enable logging with defmt for the STM32 embassy implementation
 //!
 //! ### HAL/sync support:
-//! 
+//!
 //! - `rp2040-hal`: Enable the RP2040 HAL implementation
 //! - `rp2350-hal`: Enable the RP2350 HAL implementation
 //! - `defmt`: Enable logging with defmt, for use with the HAL implementations
-//! 
+//!
 //! ### Other
-//! 
+//!
 //! - `alloc`: Enable features that require heap allocation but simplifies
 //! usage
-//! 
+//!
 //! ### Example Feature/Target combination
-//! 
+//!
 //! This builds the library for RP2040 with embassy and defmt support:
-//! 
+//!
 //! ```bash
 //! cargo build --features rp2040-embassy,defmt-embassy-rp --target thumbv6m-none-eabi
 //! ```
-//! 
+//!
 //! ## Embassy Objects
-//! 
+//!
 //! If you want to use an include, off the shelf implementation that works with
 //! Embassy the objects, you need to use are:
-//! 
+//!
 //! - [`WatchdogConfig`] - Used to configure the task-watchdog.
 //! - [`embassy_rp::WatchdogRunner`] - Create with the hardware watchdog
 //! peripheral and `WatchdogConfig`, and then use to operate the task-watchdog, including task management.  There is also an `embassy_stm32::WatchdogRunner` for STM32.
-//! - [`Id`] - Trait for task identifiers.  If you use an enum, derive the 
+//! - [`Id`] - Trait for task identifiers.  If you use an enum, derive the
 //! `Clone`, `Copy`, `PartialEq`, `Eq` and `Debug`/`Format` traits, and then
 //! implement `Id` for the enum.  The Id implementation can be empty, if you
 //! derive the required implementations.  You must also derive orimplement
@@ -298,11 +298,11 @@ pub trait Id: PartialEq + Eq + Ord + defmt::Format + Clone + Copy {}
 pub trait Id: PartialEq + Eq + Ord + core::fmt::Debug + Clone + Copy {}
 #[cfg(all(not(feature = "alloc"), feature = "defmt"))]
 /// Trait for task identifiers.
-/// 
-/// You need an object implementing this trait (likely by using derive()) in 
+///
+/// You need an object implementing this trait (likely by using derive()) in
 /// order to identify tasks to the watchdog.  This can be any object you
 /// like implementing this trait, although an `enum` would probably be a
-/// good choice. 
+/// good choice.
 pub trait Id: PartialEq + Eq + defmt::Format + Clone + Copy {}
 #[cfg(all(not(feature = "alloc"), not(feature = "defmt")))]
 /// Trait for task identifiers.
@@ -680,23 +680,23 @@ impl Clock for EmbassyClock {
 
 /// An syncronous implementation of task-watchdog for use with the RP2040
 /// and RP2350 HALs.
-/// 
-/// This module requires either the `rp2040-hal` or `rp2350-hal` feature. 
-/// 
+///
+/// This module requires either the `rp2040-hal` or `rp2350-hal` feature.
+///
 /// See the [`rp-sync`](https://github.com/piersfinlayson/task-watchdog/blob/main/examples/src/rp-sync.rs)
 /// example for how to use this module.
 #[cfg(any(feature = "rp2040-hal", feature = "rp2350-hal"))]
 pub mod rp_hal {
     use super::{Clock, HardwareWatchdog, ResetReason};
+    use hal::fugit::{Duration as RpHalDuration, MicrosDurationU32};
+    #[cfg(feature = "rp2350-hal")]
+    use hal::timer::CopyableTimer0;
+    use hal::timer::{Instant as RpHalInstant, Timer as RpHalTimer};
+    use hal::watchdog::Watchdog as RpHalWatchdog;
     #[cfg(feature = "rp2040-hal")]
     use rp2040_hal as hal;
     #[cfg(feature = "rp2350-hal")]
     use rp235x_hal as hal;
-    use hal::watchdog::Watchdog as RpHalWatchdog;
-    use hal::timer::{Timer as RpHalTimer, Instant as RpHalInstant};
-    use hal::fugit::{Duration as RpHalDuration, MicrosDurationU32};
-    #[cfg(feature = "rp2350-hal")]
-    use hal::timer::CopyableTimer0;
 
     /// A simple clock implementation based on hal::timer::Timer
     #[cfg(feature = "rp2040-hal")]
@@ -757,7 +757,8 @@ pub mod rp_hal {
         fn start(&mut self, timeout: <RpHalClock as Clock>::Duration) {
             let timeout_micros = timeout.to_micros();
             assert!(timeout_micros <= u32::MAX as u64);
-            let micros_dur_u32: MicrosDurationU32 = MicrosDurationU32::micros(timeout_micros as u32);
+            let micros_dur_u32: MicrosDurationU32 =
+                MicrosDurationU32::micros(timeout_micros as u32);
             self.inner.start(micros_dur_u32);
         }
 
@@ -781,22 +782,24 @@ pub mod rp_hal {
 
 /// An async implementation of task-watchdog for use with the RP2040 and RP2350
 /// embassy implementations.  There is an stm32 equivalent of this module.
-/// 
+///
 /// This module requires either the `rp2040-embassy` or `rp2350-embassy`
 /// feature.
-/// 
+///
 /// See the [`embassy`](https://github.com/piersfinlayson/task-watchdog/blob/main/examples/src/embassy.rs)
 /// example for how to use this module.
-/// 
-/// There is an equivalent `embassy_stm32` module for STM32, but due to 
+///
+/// There is an equivalent `embassy_stm32` module for STM32, but due to
 /// docs.rs limitations it is not documented here.  See the above example for
 /// usage of that module.
 #[cfg(any(feature = "rp2040-embassy", feature = "rp2350-embassy"))]
 pub mod embassy_rp {
-    use super::{info, Clock, EmbassyClock, HardwareWatchdog, Id, Watchdog, WatchdogConfig, ResetReason};
-    use embassy_time::{Instant, Timer};
+    use super::{
+        info, Clock, EmbassyClock, HardwareWatchdog, Id, ResetReason, Watchdog, WatchdogConfig,
+    };
     use embassy_rp::peripherals::WATCHDOG as P_RpWatchdog;
     use embassy_rp::watchdog as rp_watchdog;
+    use embassy_time::{Instant, Timer};
 
     /// RP2040/RP2350-specific watchdog implementation.
     pub struct RpWatchdog {
@@ -829,12 +832,10 @@ pub mod embassy_rp {
         }
 
         fn reset_reason(&self) -> Option<ResetReason> {
-            self.inner
-                .reset_reason()
-                .map(|reason| match reason {
-                    embassy_rp::watchdog::ResetReason::Forced => ResetReason::Forced,
-                    embassy_rp::watchdog::ResetReason::TimedOut => ResetReason::TimedOut,
-                })
+            self.inner.reset_reason().map(|reason| match reason {
+                embassy_rp::watchdog::ResetReason::Forced => ResetReason::Forced,
+                embassy_rp::watchdog::ResetReason::TimedOut => ResetReason::TimedOut,
+            })
         }
     }
 
@@ -851,13 +852,13 @@ pub mod embassy_rp {
     }
 
     /// An Embassy RP2040/RP2350 watchdog runner.
-    /// 
+    ///
     /// There is an equivalent version of this when using the `alloc` feature
     /// which does not include the `const N: usize` type.
-    /// 
+    ///
     /// There is also an equivalent STM32 watchdog runner in the
     /// `embassy_stm32` module.
-    /// 
+    ///
     /// Create the watchdog runner using the [`WatchdogRunner::new()`] method, and then use the
     /// methods to register tasks and feed the watchdog.  You probably don't
     /// want to access the other methods directly - use [`watchdog_run()`] to
@@ -1036,7 +1037,7 @@ pub mod embassy_rp {
     }
 
     /// A version of the Watchdog Task when not using the `alloc`` feature.
-    /// 
+    ///
     /// There is an equivalent version of this when using the `alloc` feature
     /// which does not include the `const N: usize` type.
     #[cfg(not(feature = "alloc"))]
@@ -1053,7 +1054,7 @@ pub mod embassy_rp {
         I: 'static + Id,
     {
         /// Used to create a watchdog task when not using the alloc feature.
-        /// 
+        ///
         /// There is an equivalent version of this when using the `alloc` feature
         /// which does not include the `const N: usize` type.
         pub fn create_task(&'static self) -> NoAllocWatchdogTask<I, N> {
@@ -1063,7 +1064,7 @@ pub mod embassy_rp {
 
     /// Watchdog Runner function, which will monitor tasks and reset the
     /// system if any.
-    /// 
+    ///
     /// You must call this function from an async task to start and run the
     /// watchdog.  Using `spawner.must_spawn(watchdog_run(watchdog))` would
     /// likely be a good choice.
@@ -1096,14 +1097,16 @@ pub mod embassy_rp {
 
 /// An async implementation of task-watchdog for use with the STM32 embassy
 /// implementation.
-/// 
+///
 /// This module requires the `stm32-embassy` feature.
 #[cfg(feature = "stm32-embassy")]
 pub mod embassy_stm32 {
-    use super::{info, Clock, EmbassyClock, HardwareWatchdog, Id, Watchdog, WatchdogConfig, ResetReason};
-    use embassy_time::{Instant, Timer};
-    use embassy_stm32::wdg::IndependentWatchdog;
+    use super::{
+        info, Clock, EmbassyClock, HardwareWatchdog, Id, ResetReason, Watchdog, WatchdogConfig,
+    };
     use embassy_stm32::peripherals::IWDG;
+    use embassy_stm32::wdg::IndependentWatchdog;
+    use embassy_time::{Instant, Timer};
 
     /// STM32 specific watchdog implementation.
     pub struct Stm32Watchdog {
@@ -1128,11 +1131,14 @@ pub mod embassy_stm32 {
             if timeout > u32::MAX as u64 {
                 panic!("Watchdog timeout too large for STM32");
             }
-            let peripheral = self.peripheral.take().expect("STM32 Watchdog not properly initialized");
+            let peripheral = self
+                .peripheral
+                .take()
+                .expect("STM32 Watchdog not properly initialized");
 
             // Create the watchdog
             let mut wdg = IndependentWatchdog::new(peripheral, timeout as u32);
-            
+
             // Start it
             wdg.unleash();
 
@@ -1393,16 +1399,18 @@ pub mod embassy_stm32 {
 
 /// An async implementation of task-watchdog for use with the ESP32 embassy
 /// implementation.
-/// 
+///
 /// This module requires the `esp32-embassy` feature.
 #[cfg(feature = "esp32-embassy")]
 pub mod embassy_esp32 {
-    use super::{info, Clock, EmbassyClock, HardwareWatchdog, Id, Watchdog, WatchdogConfig, ResetReason};
+    use super::{
+        info, Clock, EmbassyClock, HardwareWatchdog, Id, ResetReason, Watchdog, WatchdogConfig,
+    };
     use embassy_time::{Instant, Timer};
-    use esp_hal::timer::timg::Wdt;
     use esp_hal::peripherals::TIMG0;
-    use esp_hal::timer::timg::TimerGroup;
     use esp_hal::timer::timg::MwdtStage;
+    use esp_hal::timer::timg::TimerGroup;
+    use esp_hal::timer::timg::Wdt;
 
     /// ESP32 specific watchdog implementation.
     pub struct Esp32Watchdog {
@@ -1411,21 +1419,22 @@ pub mod embassy_esp32 {
 
     impl Esp32Watchdog {
         /// Create a new ESP32 watchdog.
-        /// 
+        ///
         /// Arguments:
         /// - `timg0` - The TimerGroup to use for the watchdog.
         #[must_use]
         pub fn new(timg0: TimerGroup<TIMG0>) -> Self {
             let wdt = timg0.wdt;
-            Self {
-                inner: wdt,
-            }
+            Self { inner: wdt }
         }
     }
 
     impl HardwareWatchdog<EmbassyClock> for Esp32Watchdog {
         fn start(&mut self, timeout: embassy_time::Duration) {
-            self.inner.set_timeout(MwdtStage::Stage0, esp_hal::time::Duration::from_millis(timeout.as_millis()));
+            self.inner.set_timeout(
+                MwdtStage::Stage0,
+                esp_hal::time::Duration::from_millis(timeout.as_millis()),
+            );
             self.inner.enable();
         }
 

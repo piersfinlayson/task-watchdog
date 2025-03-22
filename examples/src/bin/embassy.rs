@@ -11,13 +11,13 @@
 //! scripts/flash-async-pico2.sh
 //! scripts/flash-async-stm32f103c8.sh
 //! ```
-//! 
+//!
 //! On ESP32, connect your device via USB and run:
-//! 
+//!
 //! ```bash
 //! scripts/flash-async-esp32.sh
 //! ```
-//! 
+//!
 //! Other options are available, including with and without defmt, and with
 //! dynamic memory allocation.  See [`scripts/build-examples.sh`] for the
 //! supported combinations.
@@ -40,6 +40,8 @@ use defmt::Format as Debug;
 use defmt::{info, warn};
 #[cfg(feature = "defmt")]
 use defmt_rtt as _;
+#[cfg(not(feature = "esp32"))]
+use embassy_executor::main as embassy_main;
 use embassy_executor::Spawner;
 #[cfg(any(feature = "rp2040", feature = "rp2350"))]
 use embassy_rp::config::Config;
@@ -47,30 +49,28 @@ use embassy_rp::config::Config;
 use embassy_rp::gpio::{Level, Output};
 #[cfg(feature = "stm32")]
 use embassy_stm32::gpio::{Level, Output, Speed};
-#[cfg(feature = "esp32")]
-use esp_hal::gpio::{Level, Output, OutputConfig};
 use embassy_time::{Duration, Timer};
 #[cfg(feature = "alloc")]
 use embedded_alloc::LlffHeap as Heap;
-use static_cell::StaticCell;
-#[cfg(not(feature = "esp32"))]
-use panic_probe as _;
 #[cfg(feature = "esp32")]
 use esp_backtrace as _;
-#[cfg(not(feature = "esp32"))]
-use embassy_executor::main as embassy_main;
+#[cfg(feature = "esp32")]
+use esp_hal::gpio::{Level, Output, OutputConfig};
 #[cfg(feature = "esp32")]
 use esp_hal_embassy::main as embassy_main;
 #[cfg(all(feature = "esp32", not(feature = "defmt")))]
 use esp_println::println;
+#[cfg(not(feature = "esp32"))]
+use panic_probe as _;
+use static_cell::StaticCell;
 
-use task_watchdog::{Id, WatchdogConfig};
-#[cfg(any(feature = "rp2040", feature = "rp2350"))]
-use task_watchdog::embassy_rp::{WatchdogRunner, watchdog_run};
-#[cfg(feature = "stm32")]
-use task_watchdog::embassy_stm32::{WatchdogRunner, watchdog_run};
 #[cfg(feature = "esp32")]
-use task_watchdog::embassy_esp32::{WatchdogRunner, watchdog_run};
+use task_watchdog::embassy_esp32::{watchdog_run, WatchdogRunner};
+#[cfg(any(feature = "rp2040", feature = "rp2350"))]
+use task_watchdog::embassy_rp::{watchdog_run, WatchdogRunner};
+#[cfg(feature = "stm32")]
+use task_watchdog::embassy_stm32::{watchdog_run, WatchdogRunner};
+use task_watchdog::{Id, WatchdogConfig};
 
 /// If we're not using cfg(feature = "defmt") we need logging macros.
 #[cfg(all(feature = "esp32", not(feature = "defmt")))]

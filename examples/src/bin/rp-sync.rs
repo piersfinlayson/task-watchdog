@@ -1,6 +1,6 @@
-//! Synchronous API example for task-watchdog on a non-Embassy system, 
+//! Synchronous API example for task-watchdog on a non-Embassy system,
 //! supporting the RP2040 (Pico) and RP2350 (Pico 2).
-//! 
+//!
 //! To run this example, connect a Debug Probe to your host and to the Pico
 //! or Pico 2 under test, and from the repository root, run one of:
 //!
@@ -16,26 +16,26 @@
 #![no_std]
 #![no_main]
 
+use cortex_m_rt as _;
 use defmt::Format as Debug;
 use defmt::{info, warn};
-use {defmt_rtt as _, panic_probe as _};
-use task_watchdog::{Watchdog, WatchdogConfig, Id};
+use embedded_hal::delay::DelayNs;
+use embedded_hal::digital::OutputPin;
+use hal::clocks::init_clocks_and_plls;
+use hal::fugit::Duration as RpHalDuration;
+use hal::gpio::Pins;
+use hal::timer::Timer as RpHalTimer;
+use hal::watchdog::Watchdog as RpHalWatchdog;
+use hal::{entry, pac, Sio};
+#[cfg(feature = "rp2040-hal")]
+use rp2040_boot2 as _;
 #[cfg(feature = "rp2040-hal")]
 use rp2040_hal as hal;
 #[cfg(feature = "rp2350-hal")]
 use rp235x_hal as hal;
-use task_watchdog::rp_hal::{RpHalTaskWatchdog, RpHalClock};
-use hal::clocks::init_clocks_and_plls;
-use hal::{pac, entry, Sio};
-use hal::watchdog::Watchdog as RpHalWatchdog;
-use hal::timer::{Timer as RpHalTimer};
-use hal::fugit::{Duration as RpHalDuration};
-use hal::gpio::Pins;
-use embedded_hal::delay::DelayNs;
-use embedded_hal::digital::OutputPin;
-use cortex_m_rt as _;
-#[cfg(feature = "rp2040-hal")]
-use rp2040_boot2 as _;
+use task_watchdog::rp_hal::{RpHalClock, RpHalTaskWatchdog};
+use task_watchdog::{Id, Watchdog, WatchdogConfig};
+use {defmt_rtt as _, panic_probe as _};
 
 // Create a boot2 section, so binary will boot
 #[cfg(feature = "rp2040-hal")]
@@ -70,7 +70,17 @@ fn main() -> ! {
     // Initialize clocks and PLLs
     let mut watchdog = RpHalWatchdog::new(p.WATCHDOG);
     const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
-    let clocks = init_clocks_and_plls(XOSC_CRYSTAL_FREQ, p.XOSC, p.CLOCKS, p.PLL_SYS, p.PLL_USB, &mut p.RESETS, &mut watchdog).ok().unwrap();
+    let clocks = init_clocks_and_plls(
+        XOSC_CRYSTAL_FREQ,
+        p.XOSC,
+        p.CLOCKS,
+        p.PLL_SYS,
+        p.PLL_USB,
+        &mut p.RESETS,
+        &mut watchdog,
+    )
+    .ok()
+    .unwrap();
 
     // Do some logging.
     info!("task-watchdog example: rp-sync");
@@ -104,10 +114,22 @@ fn main() -> ! {
         Watchdog::new(hw_watchdog, config, RpHalClock::new(timer));
 
     // Register our tasks
-    let _ = watchdog.register_task(&TaskId::Main, RpHalDuration::<u64, 1, 1_000_000>::millis(2000));
-    let _ = watchdog.register_task(&TaskId::Sensors, RpHalDuration::<u64, 1, 1_000_000>::millis(3000));
-    let _ = watchdog.register_task(&TaskId::Communication, RpHalDuration::<u64, 1, 1_000_000>::millis(5000));
-    let _ = watchdog.register_task(&TaskId::Failing, RpHalDuration::<u64, 1, 1_000_000>::millis(5000));
+    let _ = watchdog.register_task(
+        &TaskId::Main,
+        RpHalDuration::<u64, 1, 1_000_000>::millis(2000),
+    );
+    let _ = watchdog.register_task(
+        &TaskId::Sensors,
+        RpHalDuration::<u64, 1, 1_000_000>::millis(3000),
+    );
+    let _ = watchdog.register_task(
+        &TaskId::Communication,
+        RpHalDuration::<u64, 1, 1_000_000>::millis(5000),
+    );
+    let _ = watchdog.register_task(
+        &TaskId::Failing,
+        RpHalDuration::<u64, 1, 1_000_000>::millis(5000),
+    );
 
     // Start the watchdog
     watchdog.start();
@@ -155,13 +177,13 @@ fn failing(watchdog: &mut WatchdogType) {
     // Implement your failing task logic
 
     // Feed the watchdog - stop after 15 iterations
-    let feed = unsafe { 
+    let feed = unsafe {
         COUNT += 1;
         if COUNT < 15 {
             true
         } else {
             false
-        } 
+        }
     };
     if feed {
         watchdog.feed(&TaskId::Failing);
