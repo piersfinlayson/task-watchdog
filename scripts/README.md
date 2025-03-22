@@ -34,4 +34,27 @@ Example to flash the embassy example to a Pico via a Debug Probe:
 scripts/flash-embassy-pico.sh
 ```
 
+## ESP32
 
+At the time of writing, ESP32 support in Rust requires additional tools to be installed.  Your best resource is the [ESP on Rust Book](https://docs.esp-rs.org/book/).
+
+The tl;dr is:
+
+```bash
+cargo install espup
+cargo install espflash
+cargo install cargo-espflash
+```
+
+To manually run ESP32 builds you will need to source the ESP build environment in your shell:
+
+```bash
+. ~/export-esp.sh
+```
+
+And, instead of using the regular `cargo`, use:
+```bash
+~/.rustup/toolchains/esp/bin/cargo
+```
+
+The build scripts will souce the ESP build environment and use the correct verion of cargo (if installed).

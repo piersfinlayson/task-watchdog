@@ -1,5 +1,7 @@
-//! Example application using the task-watchdog crate with Embassy, supporting
-//! the RP2040 or RP2350 (Pico and Pico 2) and STM32 (STM32F103C8, blue pill).
+//! Example application using the task-watchdog crate with Embassy, supporting:
+//! - the RP2040 or RP2350 (Pico and Pico 2)
+//! - STM32 (STM32F103C8, blue pill)
+//! - ESP32 (Lolin D32 Pro)
 //!
 //! To run this example, connect a Debug Probe to your host and to the device
 //! under test, and from the repository root, run one of:
@@ -8,6 +10,12 @@
 //! scripts/flash-async-pico.sh
 //! scripts/flash-async-pico2.sh
 //! scripts/flash-async-stm32f103c8.sh
+//! ```
+//! 
+//! On ESP32, connect your device via USB and run:
+//! 
+//! ```bash
+//! scripts/flash-async-esp32.sh
 //! ```
 //! 
 //! Other options are available, including with and without defmt, and with
@@ -39,24 +47,49 @@ use embassy_rp::config::Config;
 use embassy_rp::gpio::{Level, Output};
 #[cfg(feature = "stm32")]
 use embassy_stm32::gpio::{Level, Output, Speed};
+#[cfg(feature = "esp32")]
+use esp_hal::gpio::{Level, Output, OutputConfig};
 use embassy_time::{Duration, Timer};
 #[cfg(feature = "alloc")]
 use embedded_alloc::LlffHeap as Heap;
 use static_cell::StaticCell;
+#[cfg(not(feature = "esp32"))]
 use panic_probe as _;
+#[cfg(feature = "esp32")]
+use esp_backtrace as _;
+#[cfg(not(feature = "esp32"))]
+use embassy_executor::main as embassy_main;
+#[cfg(feature = "esp32")]
+use esp_hal_embassy::main as embassy_main;
+#[cfg(all(feature = "esp32", not(feature = "defmt")))]
+use esp_println::println;
 
 use task_watchdog::{Id, WatchdogConfig};
 #[cfg(any(feature = "rp2040", feature = "rp2350"))]
 use task_watchdog::embassy_rp::{WatchdogRunner, watchdog_run};
 #[cfg(feature = "stm32")]
 use task_watchdog::embassy_stm32::{WatchdogRunner, watchdog_run};
+#[cfg(feature = "esp32")]
+use task_watchdog::embassy_esp32::{WatchdogRunner, watchdog_run};
 
 /// If we're not using cfg(feature = "defmt") we need logging macros.
-#[cfg(not(feature = "defmt"))]
+#[cfg(all(feature = "esp32", not(feature = "defmt")))]
+macro_rules! info {
+    ($fmt:expr $(, $args:expr)* $(,)?) => {
+        println!(concat!("INFO: ", $fmt) $(, $args)*)
+    };
+}
+#[cfg(all(feature = "esp32", not(feature = "defmt")))]
+macro_rules! warn {
+    ($fmt:expr $(, $args:expr)* $(,)?) => {
+        println!(concat!("WARN: ", $fmt) $(, $args)*)
+    };
+}
+#[cfg(all(not(feature = "esp32"), not(feature = "defmt")))]
 macro_rules! info {
     ($($tt:tt)*) => {};
 }
-#[cfg(not(feature = "defmt"))]
+#[cfg(all(not(feature = "esp32"), not(feature = "defmt")))]
 macro_rules! warn {
     ($($tt:tt)*) => {};
 }
@@ -103,7 +136,7 @@ impl Id for TaskId {}
 const NUM_TASK_IDS: usize = 4;
 
 /// Our main entry point.
-#[embassy_executor::main]
+#[embassy_main]
 async fn main(spawner: Spawner) {
     // Initialize the allocator in the cfg(feature = "alloc") case.
     #[cfg(feature = "alloc")]
@@ -120,6 +153,16 @@ async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Config::default());
     #[cfg(feature = "stm32")]
     let p = embassy_stm32::init(Default::default());
+    #[cfg(feature = "esp32")]
+    let p = esp_hal::init(esp_hal::Config::default());
+
+    // On ESP32 need to initialize the timer0 peripheral for embassy.
+    #[cfg(feature = "esp32")]
+    let timg0 = {
+        let timg1 = esp_hal::timer::timg::TimerGroup::new(p.TIMG1);
+        esp_hal_embassy::init(timg1.timer0);
+        esp_hal::timer::timg::TimerGroup::new(p.TIMG0)
+    };
 
     // Do some logging.
     info!("task-watchdog example: async");
@@ -129,6 +172,8 @@ async fn main(spawner: Spawner) {
     info!("Running on RP2350");
     #[cfg(feature = "stm32")]
     info!("Running on STM32");
+    #[cfg(feature = "esp32")]
+    info!("Running on ESP32");
     #[cfg(feature = "alloc")]
     info!("The alloc feature is enabled");
     #[cfg(not(feature = "alloc"))]
@@ -149,8 +194,17 @@ async fn main(spawner: Spawner) {
     }
     #[cfg(feature = "stm32")]
     {
-        // On the STM32F103C8 (blue pill), the LED is on PC13.
+        // On the STM32F103C8 (blue pill), the LED is on PC13.  It's active
+        // low.
         let mut led = Output::new(p.PC13, Level::High, Speed::Low);
+        led.set_low();
+        Timer::after_millis(100).await;
+        led.set_high();
+    }
+    #[cfg(feature = "esp32")]
+    {
+        // On the Lolin D32 Pro, the on board LED is GPIO5.  It's active low.
+        let mut led = Output::new(p.GPIO5, Level::High, OutputConfig::default());
         led.set_low();
         Timer::after_millis(100).await;
         led.set_high();
@@ -168,12 +222,14 @@ async fn main(spawner: Spawner) {
     let watchdog = WatchdogRunner::new(p.WATCHDOG, config);
     #[cfg(feature = "stm32")]
     let watchdog = WatchdogRunner::new(p.IWDG, config);
+    #[cfg(feature = "esp32")]
+    let watchdog = WatchdogRunner::new(timg0, config);
 
     // Make watchdog static so it can be shared between tasks
     let watchdog = WATCHDOG.init(watchdog);
 
     // Log the last reset reason
-    info!("Last reset reason: {}", watchdog.reset_reason().await);
+    info!("Last reset reason: {:?}", watchdog.reset_reason().await);
 
     // Register our tasks.  You can also do this from within the task itself,
     // and you can deregister the task if the task is exiting, or if it is

@@ -45,3 +45,15 @@ cargo build --target $TARGET --no-default-features --features stm32-embassy,emba
 cargo build --target $TARGET --no-default-features --features stm32-embassy,defmt-embassy-stm32,embassy-stm32/$BOARD
 cargo build --target $TARGET --no-default-features --features stm32-embassy,alloc,embassy-stm32/$BOARD
 cargo build --target $TARGET --no-default-features --features stm32-embassy,defmt-embassy-stm32,alloc,embassy-stm32/$BOARD
+
+# Build all valid combinations of features for the library using the ESP32 target
+TARGET=$ESP32_TARGET
+export RUSTC=$ESP_RUSTC
+export CARGO=$ESP_CARGO
+source $HOME/export-esp.sh
+$CARGO -Z unstable-options -Z build-std=core build --no-default-features --features esp32-embassy --target $TARGET
+$CARGO -Z unstable-options -Z build-std=core,alloc build --no-default-features --features esp32-embassy,alloc --target $TARGET
+$CARGO -Z unstable-options -Z build-std=core build --no-default-features --features esp32-embassy,defmt-embassy-esp32 --target $TARGET
+$CARGO -Z unstable-options -Z build-std=core,alloc build --no-default-features --features esp32-embassy,defmt-embassy-esp32,alloc --target $TARGET
+unset RUSTC
+unset CARGO

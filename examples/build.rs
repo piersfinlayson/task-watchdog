@@ -70,8 +70,16 @@ fn main() {
 
     // Set embassy linker arguments for the binary.
     println!("cargo:rustc-link-arg=-v");
-    println!("cargo:rustc-link-arg-bins=--nmagic");
-    println!("cargo:rustc-link-arg-bins=-Tlink.x");
+    #[cfg(not(feature = "esp32"))]
+    {
+        println!("cargo:rustc-link-arg-bins=--nmagic");
+        println!("cargo:rustc-link-arg-bins=-Tlink.x");
+    }
+    #[cfg(feature = "esp32")]
+    {
+        println!("cargo:rustc-link-arg-bins=-Wl,-Tlinkall.x");
+        println!("cargo:rustc-link-arg=-nostartfiles");
+    }
 
     // Required for defmt
     #[cfg(feature = "defmt")]

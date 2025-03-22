@@ -41,6 +41,8 @@ To understand how to use `task-watchdog` yourself, check out one of the examples
 * [`embasy.rs`](examples/src/bin/embasy.rs) - Pico/Pico 2/STM32
 * [`rp-sync.rs`](examples/src/bin/rp-sync.rs) - Pico/Pico 2
 
+For ESP32 support see [`scripts/README.md`](scripts/README.md#ESP32).
+
 ## 📝 Usage
 
 The library supports both synchronous and asynchronous APIs with a consistent pattern across both styles.
