@@ -24,6 +24,7 @@ Add the approriate target(s):
 rustup target add thumbv6m-none-eabi         # RP2040/Pico
 rustup target add thumbv8m.main-none-eabihf  # RP235x/Pico 2
 rustup target add thumbv7m-none-eabi         # STM32
+rustup target add thumbv7em-none-eabi        # NRF
 ```
 
 Next, [install probe-rs](https://probe.rs/docs/getting-started/installation/)
@@ -34,11 +35,12 @@ Now connect your Pico/Pico 2/STM321F103C8 device to a connected debug probe, and
 builds/flash-async-pico.sh
 builds/flash-async-pico2.sh
 builds/flash-async-stm32f103c8.sh
+builds/flash-async-nrf52840.sh
 ```
 
 To understand how to use `task-watchdog` yourself, check out one of the examples:
-* [`intro.rs`](examples/src/bin/intro.rs) - A very basic Pico/Pico 2/STM32 async example
-* [`embasy.rs`](examples/src/bin/embasy.rs) - Pico/Pico 2/STM32
+* [`intro.rs`](examples/src/bin/intro.rs) - A very basic Pico/Pico 2/STM32/nRF/ESP32 async example
+* [`embassy.rs`](examples/src/bin/embassy.rs) - Pico/Pico 2/STM32
 * [`rp-sync.rs`](examples/src/bin/rp-sync.rs) - Pico/Pico 2
 
 For ESP32 support see [`scripts/README.md`](scripts/README.md#ESP32).
@@ -124,6 +126,7 @@ There are many other features - see [`scripts/build-lib.sh`](scripts/build-lib.s
 - `embassy,rp2040,defmt` - Async, Pico with defmt support
 - `embassy,rp2350,defmt` - Async, Pico 2 with defmt support
 - `embassy,stm32,defmt` - Async, STM32 with defmt support - you will also need `embassy-stm32/your_stm32_board_type`
+- `embassy,nrf,defmt` - Async, nRF with defmt support - you will also need `embassy-nrf/your_nrf_board_type`
 
 ## 📜 License
 

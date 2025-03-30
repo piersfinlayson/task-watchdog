@@ -1,6 +1,7 @@
 //! Example application using the task-watchdog crate with Embassy, supporting:
 //! - the RP2040 or RP2350 (Pico and Pico 2)
 //! - STM32 (STM32F103C8, blue pill)
+//! - nrF (nRF52840)
 //! - ESP32 (Lolin D32 Pro)
 //!
 //! To run this example, connect a Debug Probe to your host and to the device
@@ -10,6 +11,7 @@
 //! scripts/flash-async-pico.sh
 //! scripts/flash-async-pico2.sh
 //! scripts/flash-async-stm32f103c8.sh
+//! scripts/flash-async-nrf52840.sh
 //! ```
 //!
 //! On ESP32, connect your device via USB and run:
@@ -49,6 +51,8 @@ use embassy_rp::config::Config;
 use embassy_rp::gpio::{Level, Output};
 #[cfg(feature = "stm32")]
 use embassy_stm32::gpio::{Level, Output, Speed};
+#[cfg(feature = "nrf")]
+use embassy_nrf::gpio::{Level, Output, OutputDrive};
 use embassy_time::{Duration, Timer};
 #[cfg(feature = "alloc")]
 use embedded_alloc::LlffHeap as Heap;
@@ -70,6 +74,8 @@ use task_watchdog::embassy_esp32::{watchdog_run, WatchdogRunner};
 use task_watchdog::embassy_rp::{watchdog_run, WatchdogRunner};
 #[cfg(feature = "stm32")]
 use task_watchdog::embassy_stm32::{watchdog_run, WatchdogRunner};
+#[cfg(feature = "nrf")]
+use task_watchdog::embassy_nrf::{watchdog_run, WatchdogRunner};
 use task_watchdog::{Id, WatchdogConfig};
 
 /// If we're not using cfg(feature = "defmt") we need logging macros.
@@ -153,6 +159,8 @@ async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Config::default());
     #[cfg(feature = "stm32")]
     let p = embassy_stm32::init(Default::default());
+    #[cfg(feature = "nrf")]
+    let p = embassy_nrf::init(Default::default());
     #[cfg(feature = "esp32")]
     let p = esp_hal::init(esp_hal::Config::default());
 
@@ -172,6 +180,8 @@ async fn main(spawner: Spawner) {
     info!("Running on RP2350");
     #[cfg(feature = "stm32")]
     info!("Running on STM32");
+    #[cfg(feature = "nrf")]
+    info!("Running on nRF");
     #[cfg(feature = "esp32")]
     info!("Running on ESP32");
     #[cfg(feature = "alloc")]
@@ -201,6 +211,14 @@ async fn main(spawner: Spawner) {
         Timer::after_millis(100).await;
         led.set_high();
     }
+    #[cfg(feature = "nrf")]
+    {
+        // On the ProMicro V1940 nRF52840, the LED is on P0_15.  It's active high.
+        let mut led = Output::new(p.P0_15, Level::Low, OutputDrive::Standard);
+        led.set_high();
+        Timer::after_millis(100).await;
+        led.set_low();
+    }
     #[cfg(feature = "esp32")]
     {
         // On the Lolin D32 Pro, the on board LED is GPIO5.  It's active low.
@@ -222,6 +240,8 @@ async fn main(spawner: Spawner) {
     let watchdog = WatchdogRunner::new(p.WATCHDOG, config);
     #[cfg(feature = "stm32")]
     let watchdog = WatchdogRunner::new(p.IWDG, config);
+    #[cfg(feature = "nrf")]
+    let watchdog = WatchdogRunner::new(p.WDT, config);
     #[cfg(feature = "esp32")]
     let watchdog = WatchdogRunner::new(timg0, config);
 

@@ -137,7 +137,8 @@
 //! - RP2040 - `thumbv6m-none-eabi`
 //! - RP2350 - `thumbv8m.main-none-eabihf`
 //! - STM32 - `thumbv7m-none-eabi`
-//!
+//! - nRF - `thumbv7em-none-eabihf`
+//! 
 //! ## Feature Flags
 //!
 //! The following feature flags are supported
@@ -147,8 +148,10 @@
 //! - `rp2040-embassy`: Enable the RP2040-specific embassy implementation
 //! - `rp2350-embassy`: Enable the RP2350-specific embassy implementation
 //! - `stm32`: Enable the STM32-specific embassy implementation
+//! - `nrf`: Enable the nRF-specific embassy implementation
 //! - `defmt-embassy-rp`: Enable logging with defmt for the RP2040 and RP2350 embassy implementation
 //! - `defmt-embassy-stm32`: Enable logging with defmt for the STM32 embassy implementation
+//! - `defmt-embassy-nrf`: Enable logging with defmt for the nRF embassy implementation
 //!
 //! ### HAL/sync support:
 //!
@@ -176,7 +179,7 @@
 //!
 //! - [`WatchdogConfig`] - Used to configure the task-watchdog.
 //! - [`embassy_rp::WatchdogRunner`] - Create with the hardware watchdog
-//! peripheral and `WatchdogConfig`, and then use to operate the task-watchdog, including task management.  There is also an `embassy_stm32::WatchdogRunner` for STM32.
+//! peripheral and `WatchdogConfig`, and then use to operate the task-watchdog, including task management.  There is also an `embassy_stm32::WatchdogRunner` for STM32, and `embassy_nrf::WatchdogRunner` for nRF.
 //! - [`Id`] - Trait for task identifiers.  If you use an enum, derive the
 //! `Clone`, `Copy`, `PartialEq`, `Eq` and `Debug`/`Format` traits, and then
 //! implement `Id` for the enum.  The Id implementation can be empty, if you
@@ -185,7 +188,8 @@
 //! - [`embassy_rp::watchdog_run()`] - Create and spawn a simple embassy task
 //! that just calls this function.  This task will handle policing your other
 //! tasks and feeding the hardware watchdog.  There is also an
-//! `embassy_stm32::watchdog_run()` for STM32.
+//! `embassy_stm32::watchdog_run()` for STM32 and `embassy_nrf::watchdog_run()`
+//! for nRF.
 //!
 
 // Copyright (c) 2025 Piers Finlayson <piers@piers.rocks>
@@ -781,7 +785,8 @@ pub mod rp_hal {
 }
 
 /// An async implementation of task-watchdog for use with the RP2040 and RP2350
-/// embassy implementations.  There is an stm32 equivalent of this module.
+/// embassy implementations.  There are also stm32 and nRF equivalents of this 
+/// module.
 ///
 /// This module requires either the `rp2040-embassy` or `rp2350-embassy`
 /// feature.
@@ -791,7 +796,7 @@ pub mod rp_hal {
 ///
 /// There is an equivalent `embassy_stm32` module for STM32, but due to
 /// docs.rs limitations it is not documented here.  See the above example for
-/// usage of that module.
+/// usage of that module.  `embassy_nrf` and `embassy_rsp32` also exist.
 #[cfg(any(feature = "rp2040-embassy", feature = "rp2350-embassy"))]
 pub mod embassy_rp {
     use super::{
@@ -1249,6 +1254,310 @@ pub mod embassy_stm32 {
         /// Create a new Embassy-compatible watchdog runner.
         pub fn new(hw_watchdog: IWDG, config: WatchdogConfig<EmbassyClock>) -> Self {
             let hw_watchdog = Stm32Watchdog::new(hw_watchdog);
+            let watchdog = Watchdog::new(hw_watchdog, config, EmbassyClock);
+            Self {
+                watchdog: embassy_sync::mutex::Mutex::new(core::cell::RefCell::new(watchdog)),
+            }
+        }
+
+        /// Register a task with the watchdog.
+        pub async fn register_task(&self, id: &I, max_duration: <EmbassyClock as Clock>::Duration) {
+            self.watchdog
+                .lock()
+                .await
+                .borrow_mut()
+                .register_task(id, max_duration)
+                .ok();
+        }
+
+        /// Deregister a task with the watchdog.
+        pub async fn deregister_task(&self, id: &I) {
+            self.watchdog.lock().await.borrow_mut().deregister_task(id);
+        }
+
+        /// Feed the watchdog for a specific task.
+        pub async fn feed(&self, id: &I) {
+            self.watchdog.lock().await.borrow_mut().feed(id);
+        }
+
+        /// Start the watchdog.
+        pub async fn start(&self) {
+            self.watchdog.lock().await.borrow_mut().start();
+        }
+
+        /// Trigger a system reset.
+        pub async fn trigger_reset(&self) -> ! {
+            self.watchdog.lock().await.borrow_mut().trigger_reset()
+        }
+
+        /// Get the last reset reason.
+        pub async fn reset_reason(&self) -> Option<ResetReason> {
+            self.watchdog.lock().await.borrow().reset_reason()
+        }
+
+        /// Get the check interval
+        pub async fn get_check_interval(&self) -> <EmbassyClock as Clock>::Duration {
+            self.watchdog.lock().await.borrow().config.check_interval
+        }
+
+        /// Check if any tasks have starved
+        pub async fn check_tasks(&self) -> bool {
+            self.watchdog.lock().await.borrow_mut().check()
+        }
+    }
+
+    // For alloc feature
+    #[cfg(feature = "alloc")]
+    pub struct WatchdogTask<I>
+    where
+        I: 'static + Id,
+    {
+        runner: &'static WatchdogRunner<I>,
+    }
+
+    #[cfg(feature = "alloc")]
+    impl<I> WatchdogRunner<I>
+    where
+        I: 'static + Id,
+    {
+        pub fn create_task(&'static self) -> WatchdogTask<I> {
+            WatchdogTask { runner: self }
+        }
+    }
+
+    /// Watchdog Runner function, which will monitor tasks and reset the
+    /// system if any.  The user must call this function from an async task
+    /// to start and run the watchdog.
+    #[cfg(feature = "alloc")]
+    pub async fn watchdog_run<I>(task: WatchdogTask<I>) -> !
+    where
+        I: 'static + Id,
+    {
+        info!("Watchdog runner started");
+
+        // Start the watchdog
+        task.runner.start().await;
+
+        // Get initial check interval
+        let interval = task.runner.get_check_interval().await;
+        let mut check_time = Instant::now() + interval;
+
+        loop {
+            // Check for starved tasks.  We don't do anthing based on the
+            // return code as check_tasks() handles feeding/starving the
+            // hardware watchdog.
+            let _ = task.runner.check_tasks().await;
+
+            // Wait before checking again
+            Timer::at(check_time).await;
+            check_time += interval;
+        }
+    }
+
+    // For no_alloc feature
+    #[cfg(not(feature = "alloc"))]
+    pub struct NoAllocWatchdogTask<I, const N: usize>
+    where
+        I: 'static + Id,
+    {
+        runner: &'static WatchdogRunner<I, N>,
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    impl<I, const N: usize> WatchdogRunner<I, N>
+    where
+        I: 'static + Id,
+    {
+        pub fn create_task(&'static self) -> NoAllocWatchdogTask<I, N> {
+            NoAllocWatchdogTask { runner: self }
+        }
+    }
+
+    /// Watchdog Runner, which will monitor tasks and reset the system if any
+    /// registered task fails to feed the watchdog.
+    #[cfg(not(feature = "alloc"))]
+    pub async fn watchdog_run<I, const N: usize>(task: NoAllocWatchdogTask<I, N>) -> !
+    where
+        I: 'static + Id,
+    {
+        info!("Watchdog runner started");
+
+        // Start the watchdog
+        task.runner.start().await;
+
+        // Get initial check interval
+        let interval = task.runner.get_check_interval().await;
+        let mut check_time = Instant::now() + interval;
+
+        loop {
+            // Check for starved tasks.  We don't do anthing based on the
+            // return code as check_tasks() handles feeding/starving the
+            // hardware watchdog.
+            let _ = task.runner.check_tasks().await;
+
+            // Wait before checking again
+            Timer::at(check_time).await;
+            check_time += interval;
+        }
+    }
+}
+
+/// An async implementation of task-watchdog for use with the nRF embassy
+/// implementation.
+///
+/// This module requires the `nrf-embassy` feature.
+#[cfg(feature = "nrf-embassy")]
+pub mod embassy_nrf {
+    use super::{
+        info, warn, Clock, EmbassyClock, HardwareWatchdog, Id, ResetReason, Watchdog, WatchdogConfig,
+    };
+    use embassy_nrf::peripherals::WDT;
+    use embassy_nrf::wdt::{Watchdog as NrfWatchdogStruct, WatchdogHandle, Config};
+    use embassy_time::{Instant, Timer};
+
+    /// nRF specific watchdog implementation.
+    pub struct NrfWatchdog {
+        peripheral: Option<WDT>,
+        inner: Option<WatchdogHandle>,
+    }
+
+    impl NrfWatchdog {
+        /// Create a new nRF watchdog.
+        #[must_use]
+        pub fn new(peripheral: WDT) -> Self {
+            Self {
+                peripheral: Some(peripheral),
+                inner: None,
+            }
+        }
+    }
+
+    impl HardwareWatchdog<EmbassyClock> for NrfWatchdog {
+        fn start(&mut self, timeout: embassy_time::Duration) {
+            // Convert the requested timeout to ticks (32,768Hz)
+            let ticks = timeout.as_micros() * 1_000_000 / 32_768_000;
+            if ticks < 15 {
+                warn!("Watchdog timeout {} ticks too small for nRF - will be set to 15 ticks", ticks);
+                panic!("Watchdog timeout too large for nRF");
+            }
+            let mut config = Config::default();
+            if ticks > u32::MAX as u64 {
+                panic!("Watchdog timeout {} ticks too large for nRF", ticks);
+            }
+            config.timeout_ticks = ticks as u32;
+            let peripheral = self
+                .peripheral
+                .take()
+                .expect("nRF Watchdog not properly initialized");
+
+            // Create the watchdog and store it
+            let (_wdt, [handle]) = NrfWatchdogStruct::try_new(peripheral, config).unwrap_or_else(|_| panic!("Failed to create nRF watchdog"));
+            self.inner = Some(handle);
+        }
+
+        fn feed(&mut self) {
+            self.inner.as_mut().expect("Watchdog not started").pet();
+        }
+
+        fn trigger_reset(&mut self) -> ! {
+            cortex_m::peripheral::SCB::sys_reset();
+        }
+
+        fn reset_reason(&self) -> Option<ResetReason> {
+            None
+        }
+    }
+
+    /// An Embassy Nrf watchdog runner.
+    #[cfg(feature = "alloc")]
+    pub struct WatchdogRunner<I>
+    where
+        I: Id,
+    {
+        watchdog: embassy_sync::mutex::Mutex<
+            embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,
+            core::cell::RefCell<Watchdog<I, NrfWatchdog, EmbassyClock>>,
+        >,
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    pub struct WatchdogRunner<I, const N: usize>
+    where
+        I: Id,
+    {
+        watchdog: embassy_sync::mutex::Mutex<
+            embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,
+            core::cell::RefCell<Watchdog<I, N, NrfWatchdog, EmbassyClock>>,
+        >,
+    }
+
+    #[cfg(feature = "alloc")]
+    impl<I> WatchdogRunner<I>
+    where
+        I: Id + 'static,
+    {
+        /// Create a new Embassy-compatible watchdog runner.
+        pub fn new(hw_watchdog: WDT, config: WatchdogConfig<EmbassyClock>) -> Self {
+            let hw_watchdog = NrfWatchdog::new(hw_watchdog);
+            let watchdog = Watchdog::new(hw_watchdog, config, EmbassyClock);
+            Self {
+                watchdog: embassy_sync::mutex::Mutex::new(core::cell::RefCell::new(watchdog)),
+            }
+        }
+
+        /// Register a task with the watchdog.
+        pub async fn register_task(&self, id: &I, max_duration: <EmbassyClock as Clock>::Duration) {
+            self.watchdog
+                .lock()
+                .await
+                .borrow_mut()
+                .register_task(id, max_duration);
+        }
+
+        /// De-register a task with the watchdog.
+        pub async fn deregister_task(&self, id: &I) {
+            self.watchdog.lock().await.borrow_mut().deregister_task(id);
+        }
+
+        /// Feed the watchdog for a specific task.
+        pub async fn feed(&self, id: &I) {
+            self.watchdog.lock().await.borrow_mut().feed(id);
+        }
+
+        /// Start the watchdog.
+        pub async fn start(&self) {
+            self.watchdog.lock().await.borrow_mut().start();
+        }
+
+        /// Trigger a system reset.
+        pub async fn trigger_reset(&self) -> ! {
+            self.watchdog.lock().await.borrow_mut().trigger_reset()
+        }
+
+        /// Get the last reset reason.
+        pub async fn reset_reason(&self) -> Option<ResetReason> {
+            self.watchdog.lock().await.borrow().reset_reason()
+        }
+
+        /// Get the check interval
+        pub async fn get_check_interval(&self) -> <EmbassyClock as Clock>::Duration {
+            self.watchdog.lock().await.borrow().config.check_interval
+        }
+
+        /// Check if any tasks have starved
+        pub async fn check_tasks(&self) -> bool {
+            self.watchdog.lock().await.borrow_mut().check()
+        }
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    impl<I, const N: usize> WatchdogRunner<I, N>
+    where
+        I: Id,
+    {
+        /// Create a new Embassy-compatible watchdog runner.
+        pub fn new(hw_watchdog: WDT, config: WatchdogConfig<EmbassyClock>) -> Self {
+            let hw_watchdog = NrfWatchdog::new(hw_watchdog);
             let watchdog = Watchdog::new(hw_watchdog, config, EmbassyClock);
             Self {
                 watchdog: embassy_sync::mutex::Mutex::new(core::cell::RefCell::new(watchdog)),

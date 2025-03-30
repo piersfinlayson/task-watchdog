@@ -17,6 +17,9 @@ defmt-embassy-rp = ["defmt-embassy", "embassy-rp/defmt", "task-watchdog/defmt-em
 stm32-embassy = ["stm32", "embassy", "dep:embassy-stm32", "cortex-m", "task-watchdog/stm32-embassy", "embassy-time/tick-hz-32_768", "embedded-hal", "cortex-m/critical-section-single-core", "dep:embassy-executor", "embassy-executor/arch-cortex-m", "embassy-executor/executor-thread", "dep:panic-probe"]
 defmt-embassy-stm32 = ["defmt-embassy", "embassy-stm32/defmt", "task-watchdog/defmt-embassy-stm32", "panic-probe/print-defmt"]
 
+nrf-embassy = ["nrf", "embassy", "dep:embassy-nrf", "cortex-m", "task-watchdog/nrf-embassy", "embedded-hal", "cortex-m/critical-section-single-core", "dep:embassy-executor", "embassy-executor/arch-cortex-m", "embassy-executor/executor-thread", "dep:panic-probe", "nrf52840-memory-x"]
+defmt-embassy-nrf = ["defmt-embassy", "embassy-nrf/defmt", "task-watchdog/defmt-embassy-nrf", "panic-probe/print-defmt"]
+
 esp32-embassy = ["esp32", "embassy", "task-watchdog/esp32-embassy", "dep:esp-hal", "esp-hal/esp32", "esp-hal/unstable", "dep:esp-hal-embassy", "esp-hal-embassy/esp32", "dep:esp-backtrace", "esp-backtrace/esp32", "esp-backtrace/panic-handler", "dep:critical-section", "dep:embassy-executor"]
 esp32-println = ["dep:esp-println", "esp-println/esp32", "esp-backtrace/println"]
 defmt-embassy-esp32 = ["defmt-embassy", "task-watchdog/defmt-embassy-esp32", "esp-hal/defmt", "esp-hal-embassy/defmt", "esp-backtrace/defmt"]
@@ -32,11 +35,13 @@ cortex-m = ["dep:cortex-m", "dep:cortex-m-rt"]
 rp2040 = []
 rp2350 = []
 stm32 = []
+nrf = []
 esp32 = []
 
 rp2040-memory-x = []
 rp2040-hal-memory-x = []
 rp2350-memory-x = []
+nrf52840-memory-x = []
 
 [[bin]]
 name = "intro"
@@ -70,6 +75,7 @@ embassy-time = { version = "0.4" }
 embassy-executor = { version = "0.7.0", optional = true }
 embassy-rp = { version = "0.4", features = [ "time-driver", "critical-section-impl" ], optional = true  }
 embassy-stm32 = { version = "0.2.0", features = [ "memory-x", "time-driver-any", "unstable-pac" ], optional = true }
+embassy-nrf = { version = "0.3.1", features = ["time-driver-rtc1", "time"], optional = true }
 portable-atomic = { version = "1.10", features = ["critical-section"] }
 cortex-m = { version = "0.7.6", features = ["inline-asm"], optional = true }
 cortex-m-rt = { version = "0.7.0", optional = true }

@@ -44,10 +44,15 @@ fn main() {
         println!("cargo:rerun-if-changed=../link/memory.rp235x.x");
         include_bytes!("../link/memory.rp235x.x")
     };
+    #[cfg(feature = "nrf52840-memory-x")]
+    let memory_x = {
+        println!("cargo:rerun-if-changed=../link/memory.nrf52840.x");
+        include_bytes!("../link/memory.nrf52840.x")
+    };
 
     #[cfg(any(
         any(feature = "rp2040-memory-x", feature = "rp2040-hal-memory-x"),
-        feature = "rp2350-memory-x"
+        any(feature = "rp2350-memory-x", feature = "nrf52840-memory-x")
     ))]
     {
         use std::env;

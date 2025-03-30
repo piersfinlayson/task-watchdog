@@ -23,7 +23,6 @@ cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TAR
 cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features rp2350-embassy,alloc
 cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features rp2350-embassy,defmt-embassy-rp,alloc
 
-
 # Build STM32 embassy example ...
 EXAMPLE=embassy
 # ... for STM32F103C8 (blue pill).  
@@ -33,6 +32,16 @@ cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TAR
 cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features stm32-embassy,defmt-embassy-stm32,embassy-stm32/$BOARD
 cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features stm32-embassy,alloc,embassy-stm32/$BOARD
 cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features stm32-embassy,defmt-embassy-stm32,alloc,embassy-stm32/$BOARD
+
+# Build nRF embassy example ...
+EXAMPLE=embassy
+# ... for nRF52840.  
+BOARD=nrf52840
+TARGET=$NRF_TARGET
+cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features nrf-embassy,embassy-nrf/$BOARD
+cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features nrf-embassy,defmt-embassy-nrf,embassy-nrf/$BOARD
+cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features nrf-embassy,alloc,embassy-nrf/$BOARD
+cargo build --manifest-path=$EXAMPLES_MANIFEST_PATH --bin $EXAMPLE --target $TARGET --no-default-features --features nrf-embassy,defmt-embassy-nrf,alloc,embassy-nrf/$BOARD
 
 # Build ESP32 embassy example ...
 EXAMPLE=embassy

@@ -46,6 +46,16 @@ cargo build --target $TARGET --no-default-features --features stm32-embassy,defm
 cargo build --target $TARGET --no-default-features --features stm32-embassy,alloc,embassy-stm32/$BOARD
 cargo build --target $TARGET --no-default-features --features stm32-embassy,defmt-embassy-stm32,alloc,embassy-stm32/$BOARD
 
+# Build all valid combinations of features for the library using the nRF target
+TARGET=$NRF_TARGET
+BOARD=nrf52840
+cargo build --target $TARGET
+cargo build --target $TARGET --no-default-features --features nrf-embassy,embassy-nrf/$BOARD
+cargo build --target $TARGET --no-default-features --features nrf-embassy,embassy-nrf/$BOARD
+cargo build --target $TARGET --no-default-features --features nrf-embassy,defmt-embassy-nrf,embassy-nrf/$BOARD
+cargo build --target $TARGET --no-default-features --features nrf-embassy,alloc,embassy-nrf/$BOARD
+cargo build --target $TARGET --no-default-features --features nrf-embassy,defmt-embassy-nrf,alloc,embassy-nrf/$BOARD
+
 # Build all valid combinations of features for the library using the ESP32 target
 TARGET=$ESP32_TARGET
 export RUSTC=$ESP_RUSTC
