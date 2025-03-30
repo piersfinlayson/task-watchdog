@@ -6,6 +6,9 @@ runner = "probe-rs run --no-location --chip RP2040"
 [target.thumbv7m-none-eabi]
 runner = "probe-rs run --no-location --chip STM32F103C8"
 
+[target.thumbv7em-none-eabi]
+runner = "probe-rs run --no-location --chip nRF52840_xxAA"
+
 [target.thumbv8m.main-none-eabihf]
 runner = "probe-rs run --no-location --chip RP235x"
 #runner = "elf2uf2-rs -d"
