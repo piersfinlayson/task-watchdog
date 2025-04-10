@@ -23,7 +23,7 @@ rustflags = [
 
 [build]
 target = "thumbv6m-none-eabi"          # RP2040
-#target = "thumbv7m-none-eabihf"       # STM32
+#target = "thumbv7m-none-eabi"       # STM32
 #target = "thumbv8m.main-none-eabihf"  # RP235x
 
 [env]
